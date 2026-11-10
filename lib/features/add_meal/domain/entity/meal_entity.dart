@@ -352,8 +352,11 @@ class MealEntity extends Equatable {
     detailed: detailed,
   );
 
-  factory MealEntity.empty() => MealEntity(
-    code: IdGenerator.getUniqueID(),
+  /// A blank custom meal. [code] seeds it with a barcode — the scanner's
+  /// "not found" screen passes the code it just read, so saving the meal
+  /// makes the next scan of that product resolve to it.
+  factory MealEntity.empty({String? code}) => MealEntity(
+    code: code ?? IdGenerator.getUniqueID(),
     name: null,
     url: null,
     mealQuantity: null,

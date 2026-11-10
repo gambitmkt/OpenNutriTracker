@@ -7,7 +7,7 @@ import 'package:opennutritracker/features/meal_detail/presentation/bloc/meal_det
 /// are expressed in (grams or millilitres).
 ///
 /// `MealNutrimentsEntity`'s `*PerUnit` getters are per gram/millilitre, so an
-/// amount entered as `oz`, `fl.oz` or `serving` has to be converted *before*
+/// amount entered as `oz`, `fl.oz`, `kg`, `cup` or `serving` has to be converted *before*
 /// it is multiplied out or stored on an `IntakeEntity` — `IntakeEntity.totalKcal`
 /// is simply `amount * energyPerUnit` and does no conversion of its own.
 ///
@@ -57,6 +57,9 @@ double convertQuantityToBaseUnit(
   if (unit == UnitDropdownItem.flOz.toString()) {
     return UnitCalc.flOzToMl(quantity);
   }
+  // The entry-only units: a fixed number of grams or millilitres each.
+  final factor = UnitCalc.entryUnitToBaseFactor(unit);
+  if (factor != null) return quantity * factor;
   return quantity;
 }
 

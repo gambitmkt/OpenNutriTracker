@@ -179,7 +179,9 @@ class MealDetailBloc extends Bloc<MealDetailEvent, MealDetailState> {
 
     final intakeEntity = IntakeEntity(
       id: IdGenerator.getUniqueID(),
-      unit: unit,
+      // [amountText] is already in grams or millilitres, so an entry-only
+      // unit (kg, cup, ...) is stored as the base unit that amount is in.
+      unit: UnitDropdownItem.storedName(unit),
       amount: quantity,
       type: type,
       meal: meal,
@@ -350,7 +352,44 @@ enum UnitDropdownItem {
   gml,
   oz,
   flOz,
-  serving;
+  serving,
+  // Entry-only units. They are offered in the unit dropdowns and converted
+  // to grams or millilitres like every other unit, but `storedUnit`
+  // (portion_unit.dart) writes them down as `g` / `ml`, so the stored unit
+  // vocabulary in docs/export-format.md and the QR share payload is
+  // unchanged.
+  kg,
+  lb,
+  l,
+  cup,
+  tbsp,
+  tsp;
+
+  /// The stored unit an entry-only unit is written down as, or null for a
+  /// unit that is stored under its own name.
+  UnitDropdownItem? get storedAs => switch (this) {
+    UnitDropdownItem.kg || UnitDropdownItem.lb => UnitDropdownItem.g,
+    UnitDropdownItem.l ||
+    UnitDropdownItem.cup ||
+    UnitDropdownItem.tbsp ||
+    UnitDropdownItem.tsp => UnitDropdownItem.ml,
+    _ => null,
+  };
+
+  /// [unit] as it is written down: an entry-only unit becomes `g` or `ml`,
+  /// anything else — a portion suffix included — is returned untouched.
+  static String storedName(String unit) {
+    for (final item in values) {
+      if (item.toString() == unit) return item.storedAs?.toString() ?? unit;
+    }
+    return unit;
+  }
+
+  /// Weight units, in the order the dropdowns list them.
+  static const solidUnits = [g, kg, oz, lb];
+
+  /// Volume units, in the order the dropdowns list them.
+  static const liquidUnits = [ml, l, cup, tbsp, tsp, flOz];
 
   UnitDropdownItem fromString(String value) {
     switch (value) {
@@ -366,6 +405,18 @@ enum UnitDropdownItem {
         return UnitDropdownItem.flOz;
       case 'serving':
         return UnitDropdownItem.serving;
+      case 'kg':
+        return UnitDropdownItem.kg;
+      case 'lb':
+        return UnitDropdownItem.lb;
+      case 'l':
+        return UnitDropdownItem.l;
+      case 'cup':
+        return UnitDropdownItem.cup;
+      case 'tbsp':
+        return UnitDropdownItem.tbsp;
+      case 'tsp':
+        return UnitDropdownItem.tsp;
       default:
         return UnitDropdownItem.gml;
     }
@@ -386,6 +437,18 @@ enum UnitDropdownItem {
         return 'fl.oz';
       case UnitDropdownItem.serving:
         return 'serving';
+      case UnitDropdownItem.kg:
+        return 'kg';
+      case UnitDropdownItem.lb:
+        return 'lb';
+      case UnitDropdownItem.l:
+        return 'l';
+      case UnitDropdownItem.cup:
+        return 'cup';
+      case UnitDropdownItem.tbsp:
+        return 'tbsp';
+      case UnitDropdownItem.tsp:
+        return 'tsp';
     }
   }
 }

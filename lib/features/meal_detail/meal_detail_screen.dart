@@ -9,6 +9,8 @@ import 'package:opennutritracker/core/presentation/widgets/image_full_screen.dar
 import 'package:opennutritracker/core/styles/app_palette.dart';
 import 'package:opennutritracker/core/styles/dimens.dart';
 import 'package:opennutritracker/core/domain/usecase/get_config_usecase.dart';
+import 'package:opennutritracker/core/utils/food_unit_label.dart';
+import 'package:opennutritracker/core/utils/calc/unit_calc.dart';
 import 'package:opennutritracker/core/utils/energy_display.dart';
 import 'package:opennutritracker/core/utils/locator.dart';
 import 'package:opennutritracker/core/utils/demo/unsplash_attribution.dart';
@@ -319,6 +321,7 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
     double dayKcalGoal,
     bool isHydrating,
   ) {
+    final entryUnitFactor = UnitCalc.entryUnitToBaseFactor(selectedUnit);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final palette = isDark ? AppPalette.dark : AppPalette.light;
     return CustomScrollView(
@@ -440,12 +443,25 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
                             ?.copyWith(fontWeight: FontWeight.w800),
                       ),
                       MealValueUnitText(
-                        value: double.parse(totalQuantity),
+                        // [totalQuantity] is in grams or millilitres. For
+                        // an entry-only unit (kg, cup, ...) it is turned
+                        // back into that unit here; the widget only knows
+                        // the stored ones.
+                        value: entryUnitFactor != null
+                            ? double.parse(totalQuantity) / entryUnitFactor
+                            : double.parse(totalQuantity),
                         meal: meal,
                         displayUnit:
                             selectedUnit == UnitDropdownItem.serving.toString()
                                 ? meal.servingUnit
-                                : selectedUnit,
+                                : entryUnitFactor != null
+                                    ? entryUnitLabel(
+                                        S.of(context),
+                                        selectedUnit,
+                                        count: double.parse(totalQuantity) /
+                                            entryUnitFactor,
+                                      )
+                                    : selectedUnit,
                         usesImperialUnits: _usesImperialUnits,
                         textStyle: Theme.of(context).textTheme.bodyMedium,
                         prefix: ' / ',

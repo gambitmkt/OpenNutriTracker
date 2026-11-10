@@ -275,19 +275,13 @@ class BulkAddRow extends Equatable {
     // relabels the row, clears the warning and logs the same wrong number.
     else if (meal?.servingQuantity != null)
       UnitDropdownItem.serving.toString(),
-    if (meal?.isSolid ?? false) ...[
-      UnitDropdownItem.g.toString(),
-      UnitDropdownItem.oz.toString(),
-    ],
-    if (meal?.isLiquid ?? false) ...[
-      UnitDropdownItem.ml.toString(),
-      UnitDropdownItem.flOz.toString(),
-    ],
+    if (meal?.isSolid ?? false)
+      for (final unit in UnitDropdownItem.solidUnits) unit.toString(),
+    if (meal?.isLiquid ?? false)
+      for (final unit in UnitDropdownItem.liquidUnits) unit.toString(),
     if (!(meal?.isSolid ?? false) && !(meal?.isLiquid ?? false)) ...[
-      UnitDropdownItem.g.toString(),
-      UnitDropdownItem.oz.toString(),
-      UnitDropdownItem.ml.toString(),
-      UnitDropdownItem.flOz.toString(),
+      for (final unit in UnitDropdownItem.solidUnits) unit.toString(),
+      for (final unit in UnitDropdownItem.liquidUnits) unit.toString(),
     ],
     UnitDropdownItem.gml.toString(),
   ];

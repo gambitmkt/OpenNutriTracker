@@ -486,6 +486,8 @@
   "kgLabel": "kg",
   "kjLabel": "kJ",
   "lbsLabel": "lbs",
+  "literUnit": "l",
+  "scannerNotFoundCreateHint": "Este producto aún no está en Open Food Facts. Guárdalo una vez como alimento personalizado y el próximo escaneo lo encontrará.",
   "stLabel": "st",
   "lunchExample": "ej. pizza, ensalada, arroz ...",
   "lunchLabel": "Almuerzo",

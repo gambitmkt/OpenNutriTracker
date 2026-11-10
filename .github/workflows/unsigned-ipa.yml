@@ -1,0 +1,78 @@
+name: Unsigned iOS build (.ipa for sideloading)
+
+# Builds the app on a macOS runner without code signing and uploads it as an
+# .ipa, for installing on your own iPhone from a computer that is not a Mac
+# (Sideloadly, AltStore — they sign it with your Apple ID on install).
+#
+# Runs on a push to `unidades-escaner-ipa`, or by hand: Actions ->
+# "Unsigned iOS build" -> Run workflow.
+#
+# The `develop` flavor is built on purpose: its bundle identifier ends in
+# `.develop`, so the result installs next to the App Store app instead of
+# colliding with it.
+on:
+  workflow_dispatch:
+  # Also on every push to the fork's working branch, so a new build needs no
+  # click in the Actions tab.
+  push:
+    branches:
+      - unidades-escaner-ipa
+
+permissions:
+  contents: read
+
+jobs:
+  unsigned-ipa:
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Flutter + cache packages
+        uses: ./.github/actions/setup-flutter-cache
+
+      # Same reason as ios-build in default_workflow.yml.
+      - name: Disable Swift Package Manager
+        run: flutter config --no-enable-swift-package-manager
+
+      # Open Food Facts (barcode scan and product search) needs no key. The
+      # Supabase food backend does: without the two secrets below the stub
+      # values are compiled in and that source returns nothing.
+      - name: Generate .env
+        uses: ./.github/actions/write-env-file
+        with:
+          sentry_dns: https://stub@sentry.io/0
+          supabase_project_url: ${{ secrets.SUPABASE_PROJECT_URL || 'https://stub.supabase.co' }}
+          supabase_project_anon_key: ${{ secrets.SUPABASE_PROJECT_ANON_KEY || 'ci-stub' }}
+
+      - name: Install Flutter packages
+        run: flutter pub get
+
+      - name: Generate code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Pod install
+        run: .github/scripts/pod_install_with_targeted_fallback.sh
+
+      - name: Build iOS (no codesign)
+        run: flutter build ios --no-codesign --release --flavor develop
+
+      - name: Package .ipa
+        run: |
+          set -euo pipefail
+          app="$(find build/ios -type d -name Runner.app -path '*iphoneos*' | head -n 1)"
+          if [ -z "$app" ]; then
+            echo "::error::Runner.app not found under build/ios" >&2
+            exit 1
+          fi
+          rm -rf Payload && mkdir Payload
+          cp -R "$app" Payload/
+          zip -qry OpenNutriTracker-unsigned.ipa Payload
+
+      - name: Upload .ipa
+        uses: actions/upload-artifact@v7
+        with:
+          name: OpenNutriTracker-unsigned-ipa
+          path: OpenNutriTracker-unsigned.ipa
+          if-no-files-found: error

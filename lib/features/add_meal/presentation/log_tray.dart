@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:opennutritracker/core/utils/energy_display.dart';
+import 'package:opennutritracker/core/utils/food_unit_label.dart';
 import 'package:opennutritracker/features/add_meal/domain/entity/meal_entity.dart';
 import 'package:opennutritracker/features/add_meal/util/portion_label.dart';
 import 'package:opennutritracker/features/add_meal/util/portion_unit.dart';
@@ -161,11 +162,18 @@ String logTrayAmountLabel(
   double quantity,
   String unit,
   MealEntity meal,
-) => '${_formatQuantity(quantity)} ${logTrayUnitLabel(context, unit, meal)}';
+) =>
+    '${_formatQuantity(quantity)} '
+    '${logTrayUnitLabel(context, unit, meal, count: quantity)}';
 
 /// The word for [unit] on [meal]: a fixed unit, or the food's own name for
 /// its portion when that name is in the reader's language (#966).
-String logTrayUnitLabel(BuildContext context, String unit, MealEntity meal) {
+String logTrayUnitLabel(
+  BuildContext context,
+  String unit,
+  MealEntity meal, {
+  num count = 1,
+}) {
   final languageCode = Localizations.localeOf(context).languageCode;
   if (isPortionUnit(unit) && meal.portions.isNotEmpty) {
     final index = effectivePortionIndex(unit);
@@ -180,7 +188,12 @@ String logTrayUnitLabel(BuildContext context, String unit, MealEntity meal) {
     }
   }
   final s = S.of(context);
-  return switch (UnitDropdownItem.g.fromString(storedUnit(unit))) {
+  // `unitWithoutPortion`, not `storedUnit`: the label is for the unit the
+  // user chose, and `storedUnit` would turn "2 kg" into "2 g".
+  final chosen = unitWithoutPortion(unit);
+  final entryLabel = entryUnitLabel(s, chosen, count: count);
+  if (entryLabel != null) return entryLabel;
+  return switch (UnitDropdownItem.g.fromString(chosen)) {
     UnitDropdownItem.g => s.gramUnit,
     UnitDropdownItem.ml => s.milliliterUnit,
     UnitDropdownItem.gml => s.gramMilliliterUnit,
@@ -193,6 +206,8 @@ String logTrayUnitLabel(BuildContext context, String unit, MealEntity meal) {
             textIsLocalized: meal.servingSizeIsLocalized,
           ) ??
           s.servingLabel,
+    // The entry-only units were labelled above.
+    _ => chosen,
   };
 }
 

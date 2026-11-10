@@ -9,6 +9,7 @@ import 'package:opennutritracker/core/utils/locator.dart';
 import 'package:opennutritracker/core/utils/serving_label_localizer.dart';
 import 'package:opennutritracker/core/utils/navigation_options.dart';
 import 'package:opennutritracker/core/utils/navigation_predicates.dart';
+import 'package:opennutritracker/core/utils/food_unit_label.dart';
 import 'package:opennutritracker/features/add_meal/presentation/log_tray.dart';
 import 'package:opennutritracker/features/add_meal/util/portion_unit.dart';
 import 'package:opennutritracker/features/add_meal/domain/entity/meal_entity.dart';
@@ -573,48 +574,35 @@ class _MealDetailBottomSheetState extends State<MealDetailBottomSheet> {
 
   List<DropdownMenuItem<String>> _getSolidUnitDropdownItems(
     BuildContext context,
-  ) {
-    return [
-      DropdownMenuItem(
-        value: UnitDropdownItem.g.toString(),
-        child: Text(
-          S.of(context).gramUnit,
-          overflow: TextOverflow.ellipsis,
-          maxLines: 1,
-        ),
-      ),
-      DropdownMenuItem(
-        value: UnitDropdownItem.oz.toString(),
-        child: Text(
-          S.of(context).ozUnit,
-          overflow: TextOverflow.ellipsis,
-          maxLines: 1,
-        ),
-      ),
-    ];
-  }
+  ) => [
+    for (final unit in UnitDropdownItem.solidUnits)
+      _fixedUnitDropdownItem(context, unit),
+  ];
 
   List<DropdownMenuItem<String>> _getLiquidUnitDropdownItems(
     BuildContext context,
+  ) => [
+    for (final unit in UnitDropdownItem.liquidUnits)
+      _fixedUnitDropdownItem(context, unit),
+  ];
+
+  DropdownMenuItem<String> _fixedUnitDropdownItem(
+    BuildContext context,
+    UnitDropdownItem unit,
   ) {
-    return [
-      DropdownMenuItem(
-        value: UnitDropdownItem.ml.toString(),
-        child: Text(
-          S.of(context).milliliterUnit,
-          overflow: TextOverflow.ellipsis,
-          maxLines: 1,
-        ),
-      ),
-      DropdownMenuItem(
-        value: UnitDropdownItem.flOz.toString(),
-        child: Text(
-          S.of(context).flOzUnit,
-          overflow: TextOverflow.ellipsis,
-          maxLines: 1,
-        ),
-      ),
-    ];
+    final s = S.of(context);
+    final label = switch (unit) {
+      UnitDropdownItem.g => s.gramUnit,
+      UnitDropdownItem.oz => s.ozUnit,
+      UnitDropdownItem.ml => s.milliliterUnit,
+      UnitDropdownItem.flOz => s.flOzUnit,
+      _ => entryUnitLabel(s, unit.toString(), withSize: true) ??
+          unit.toString(),
+    };
+    return DropdownMenuItem(
+      value: unit.toString(),
+      child: Text(label, overflow: TextOverflow.ellipsis, maxLines: 1),
+    );
   }
 
   List<DropdownMenuItem<String>> _getOtherDropdownItems(BuildContext context) {

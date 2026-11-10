@@ -100,6 +100,33 @@ class UnitCalc {
     return double.parse(((stones * 14 + pounds) / 2.20462).toStringAsFixed(2));
   }
 
+  static const double gramsPerKg = 1000;
+
+  /// The international avoirdupois pound, as `meal_text_parser.dart` uses.
+  static const double gramsPerLb = 453.59237;
+
+  static const double mlPerLitre = 1000;
+
+  /// The household measures as nutrition labels define them (240 ml cup,
+  /// 15 ml tablespoon, 5 ml teaspoon) — the same figures the serving sizes
+  /// on Open Food Facts and USDA records are written against.
+  static const double mlPerCup = 240;
+  static const double mlPerTbsp = 15;
+  static const double mlPerTsp = 5;
+
+  /// Grams or millilitres in one of the entry-only food units (`kg`, `lb`,
+  /// `l`, `cup`, `tbsp`, `tsp` — `UnitDropdownItem.toString()` values), or
+  /// null for any other unit.
+  static double? entryUnitToBaseFactor(String unit) => switch (unit) {
+    'kg' => gramsPerKg,
+    'lb' => gramsPerLb,
+    'l' => mlPerLitre,
+    'cup' => mlPerCup,
+    'tbsp' => mlPerTbsp,
+    'tsp' => mlPerTsp,
+    _ => null,
+  };
+
   static double gToOz(double g) {
     return g / 28.3495;
   }

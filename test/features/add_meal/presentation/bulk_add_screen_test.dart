@@ -1889,6 +1889,10 @@ void main() {
 
     await tester.tap(find.byType(DropdownButton<String>).first);
     await tester.pumpAndSettle();
+    // The menu is long enough to scroll now that it lists kg, lb, l and
+    // the household measures, so `g` is brought into view before the tap.
+    await tester.ensureVisible(find.text('g').last);
+    await tester.pumpAndSettle();
     await tester.tap(find.text('g').last);
     await tester.pumpAndSettle();
 

@@ -9,6 +9,7 @@ import 'package:logging/logging.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:opennutritracker/core/domain/entity/intake_type_entity.dart';
 import 'package:opennutritracker/core/utils/ai_credential_storage.dart';
+import 'package:opennutritracker/core/utils/food_unit_label.dart';
 import 'package:opennutritracker/features/add_meal/presentation/log_tray.dart';
 import 'package:opennutritracker/core/utils/navigation_predicates.dart';
 import 'package:opennutritracker/features/add_meal/domain/usecase/run_ai_endpoint_probe_usecase.dart';
@@ -1483,7 +1484,14 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
   }
 
   String _fixedUnitLabel(BuildContext context, String unit, BulkAddRow row) =>
-      switch (UnitDropdownItem.g.fromString(storedUnit(unit))) {
+      // `unitWithoutPortion`, not `storedUnit`: this labels the unit the
+      // user chose, and `storedUnit` would show `kg` as `g`.
+      entryUnitLabel(
+        S.of(context),
+        unitWithoutPortion(unit),
+        withSize: true,
+      ) ??
+      switch (UnitDropdownItem.g.fromString(unitWithoutPortion(unit))) {
         UnitDropdownItem.g => S.of(context).gramUnit,
         UnitDropdownItem.ml => S.of(context).milliliterUnit,
         UnitDropdownItem.gml => S.of(context).gramMilliliterUnit,
@@ -1496,6 +1504,8 @@ class _BulkAddScreenState extends State<BulkAddScreen> {
                 textIsLocalized: row.meal?.servingSizeIsLocalized ?? false,
               ) ??
               S.of(context).servingLabel,
+        // The entry-only units were labelled above.
+        _ => unit,
       };
 
   Widget _buildSubmitBar(BuildContext context, BulkAddLoadedState state) {

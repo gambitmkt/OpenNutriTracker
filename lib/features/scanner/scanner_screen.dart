@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:logging/logging.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:opennutritracker/core/domain/entity/intake_type_entity.dart';
+import 'package:opennutritracker/core/domain/usecase/get_config_usecase.dart';
 import 'package:opennutritracker/core/presentation/scanner_orientation_mixin.dart';
 import 'package:opennutritracker/core/presentation/widgets/error_dialog.dart';
 import 'package:opennutritracker/core/styles/app_palette.dart';
@@ -13,8 +14,10 @@ import 'package:opennutritracker/core/styles/dimens.dart';
 import 'package:opennutritracker/core/utils/locator.dart';
 import 'package:opennutritracker/core/utils/navigation_options.dart';
 import 'package:opennutritracker/core/utils/shared_payload_router.dart';
+import 'package:opennutritracker/features/add_meal/domain/entity/meal_entity.dart';
 import 'package:opennutritracker/features/add_meal/presentation/log_tray.dart';
 import 'package:opennutritracker/features/add_meal/presentation/add_meal_type.dart';
+import 'package:opennutritracker/features/edit_meal/presentation/edit_meal_screen.dart';
 import 'package:opennutritracker/features/home/presentation/screens/import_activity_scanner_screen.dart';
 import 'package:opennutritracker/features/home/presentation/screens/import_meal_scanner_screen.dart';
 import 'package:opennutritracker/features/meal_detail/meal_detail_screen.dart';
@@ -149,11 +152,46 @@ class _ScannerScreenState extends State<ScannerScreen>
             backgroundColor: palette.canvas,
             appBar: AppBar(backgroundColor: palette.canvas),
             body: Center(
-              child: ErrorDialog(
-                errorText: state.type == ScannerFailedStateType.productNotFound
-                    ? S.of(context).errorProductNotFound
-                    : S.of(context).errorFetchingProductData,
-                onRefreshPressed: _onRefreshButtonPressed,
+              child: Column(
+                children: [
+                  ErrorDialog(
+                    errorText:
+                        state.type == ScannerFailedStateType.productNotFound
+                        ? S.of(context).errorProductNotFound
+                        : S.of(context).errorFetchingProductData,
+                    onRefreshPressed: _onRefreshButtonPressed,
+                  ),
+                  // A product Open Food Facts does not have yet: offer to
+                  // save it as a custom food under the code just scanned,
+                  // so the next scan of it resolves locally. Not in pick
+                  // mode, whose caller expects a meal back, not a new route.
+                  if (state.type == ScannerFailedStateType.productNotFound &&
+                      _canCreateCustomMeal) ...[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        Dimens.spacing24,
+                        Dimens.spacing24,
+                        Dimens.spacing24,
+                        Dimens.spacing16,
+                      ),
+                      child: Text(
+                        S.of(context).scannerNotFoundCreateHint,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: palette.textMuted,
+                        ),
+                      ),
+                    ),
+                    Semantics(
+                      identifier: 'scanner-create-custom-meal',
+                      child: FilledButton.tonalIcon(
+                        onPressed: _onCreateCustomMealPressed,
+                        icon: const Icon(Icons.add_rounded),
+                        label: Text(S.of(context).newCustomMealLabel),
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
           );
@@ -350,6 +388,31 @@ class _ScannerScreenState extends State<ScannerScreen>
           );
       }
     });
+  }
+
+  bool get _canCreateCustomMeal =>
+      !_pickMode &&
+      _scannedBarcode != null &&
+      _day != null &&
+      _intakeTypeEntity != null;
+
+  Future<void> _onCreateCustomMealPressed() async {
+    final barcode = _scannedBarcode;
+    final day = _day;
+    final intakeType = _intakeTypeEntity;
+    if (barcode == null || day == null || intakeType == null) return;
+    final config = await locator<GetConfigUsecase>().getConfig();
+    if (!mounted) return;
+    Navigator.of(context).pushReplacementNamed(
+      NavigationOptions.editMealRoute,
+      arguments: EditMealScreenArguments(
+        day,
+        MealEntity.empty(code: barcode),
+        intakeType,
+        config.usesImperialFoodUnits,
+        logTray: _logTray,
+      ),
+    );
   }
 
   void _onRefreshButtonPressed() {

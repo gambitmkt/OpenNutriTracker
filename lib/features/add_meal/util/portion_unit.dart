@@ -56,7 +56,17 @@ bool isPortionUnit(String unit) =>
 /// export format and the QR payload were written against. Anything without a
 /// separator passes through untouched, so this is safe to call on every unit
 /// rather than only the ones that might carry one.
-String storedUnit(String unit) {
+///
+/// The entry-only units (`kg`, `lb`, `l`, `cup`, `tbsp`, `tsp`) are written
+/// down as `g` or `ml` for the same reason: the amount beside them is
+/// already in grams or millilitres by the time it is stored.
+String storedUnit(String unit) =>
+    UnitDropdownItem.storedName(unitWithoutPortion(unit));
+
+/// [unit] without its portion suffix, and otherwise as the user chose it.
+///
+/// For labels: `storedUnit` would turn "2 kg" into "2 g".
+String unitWithoutPortion(String unit) {
   final at = unit.indexOf(_portionSeparator);
   return at < 0 ? unit : unit.substring(0, at);
 }
